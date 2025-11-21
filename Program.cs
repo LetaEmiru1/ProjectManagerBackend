@@ -1,12 +1,24 @@
+using Microsoft.EntityFrameworkCore;
+using ProjectManagerApi.Data;
+using ProjectManagerApi;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// 1. Add Controllers (The Face)
 builder.Services.AddControllers();
-builder.Services.AddSingleton<ProjectService>();
 
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+// 2. Add Swagger (The Documentation)
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+// 3. Add Database (The Memory) - Reads from appsettings.json
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+builder.Services.AddDbContext<AppDbContext>(options => 
+    options.UseSqlite(connectionString));
+
+// 4. Add Service (The Brain)
+// CRITICAL: This must be Scoped because the Database is Scoped.
+builder.Services.AddScoped<ProjectService>();
 
 var app = builder.Build();
 

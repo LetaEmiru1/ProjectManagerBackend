@@ -1,62 +1,67 @@
 using Microsoft.AspNetCore.Mvc;
+using ProjectManagerApi; // Needed to see ProjectService
 
-// 1. "ApiController" tells .NET this class handles Web Requests
+namespace ProjectManagerApi.Controllers;
+
 [ApiController]
-// 2. "Route" is the address. This means the URL will be: http://localhost:5042/api/projects
-[Route("api/[controller]")] 
+[Route("api/[controller]")]
 public class ProjectsController : ControllerBase
 {
     private readonly ProjectService _projectService;
 
-    // 3. Dependency Injection: We ask for the "Librarian" (ProjectService) here.
-    // The web server gives it to us automatically because we registered it in Program.cs!
     public ProjectsController(ProjectService projectService)
     {
         _projectService = projectService;
     }
 
-    // 4. This handles GET requests (like viewing a web page)
-    // URL: GET /api/projects/{id}
-    [HttpGet("{id}")] 
-    public IActionResult GetProject(int id)
+    // 1. GET: api/projects/{id}
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetProject(int id)
     {
-        var project = _projectService.GetProjectById(id);
+        var project = await _projectService.GetProjectByIdAsync(id);
         
         if (project == null)
         {
-            return NotFound(); // Returns a 404 Error (like Console.WriteLine("Error"))
+            return NotFound();
         }
 
-        return Ok(project); // Returns a 200 OK with the project data (JSON)
+        return Ok(project);
     }
 
-    // 5. This handles POST requests (creating data)
-    // URL: POST /api/projects
+    // 2. POST: api/projects
     [HttpPost]
-    public IActionResult CreateProject([FromBody] string name)
+    public async Task<IActionResult> CreateProject([FromBody] string name)
     {
-        // [FromBody] means "Look inside the data sent with the request to find the name"
-        var newProject = _projectService.AddProject(name);
-        
-        // Returns 200 OK with the new project info
-        return Ok(newProject); 
+        var newProject = await _projectService.AddProjectAsync(name);
+        return Ok(newProject);
     }
-    
+
+    // 3. POST: api/projects/{projectId}/tasks
     [HttpPost("{projectId}/tasks")]
-    public IActionResult AddTask(int projectId, [FromBody] string description)
+    public async Task<IActionResult> AddTask(int projectId, [FromBody] string description)
     {
-        var task = _projectService.AddTaskToProject(projectId, description);
+        var task = await _projectService.AddTaskToProjectAsync(projectId, description);
         
         if (task != null)
         {
             return Ok(task);
         }
-        else
-        {
-            return NotFound();
-        }
-
+        
+        return NotFound();
     }
 
+    // 4. PUT: api/projects/{projectId}/tasks/{taskId}
+    // This exposes your "Mark as Complete" logic to the web!
+    [HttpPut("{projectId}/tasks/{taskId}")]
+    public async Task<IActionResult> MarkTaskComplete(int projectId, int taskId)
+    {
+        var success = await _projectService.MarkTaskAsCompleteAsync(projectId, taskId);
 
+        if (success)
+        {
+            return NoContent(); // 204 means "Success, but I have no data to send back"
+        }
+
+        return NotFound();
+    }
 }

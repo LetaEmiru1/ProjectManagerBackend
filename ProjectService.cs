@@ -1,50 +1,70 @@
-using System.Reflection.Metadata.Ecma335;
+using Microsoft.EntityFrameworkCore; // Needed for ToListAsync, FirstOrDefaultAsync
+using ProjectManagerApi.Data;
+
+namespace ProjectManagerApi;
 
 public class ProjectService
 {
-    private readonly List<Project> _projects = new List<Project>();
-    private int _nextProjectId = 1;
-    private int _nextTaskId = 1;
+    // 1. We no longer have a List<Project>. We have the DbContext.
+    private readonly AppDbContext _context;
 
-    public Project AddProject(string name)
+    // 2. We ask for the DbContext in the constructor
+    public ProjectService(AppDbContext context)
     {
-        var project = new Project { Id = _nextProjectId++, Name = name };
-        _projects.Add(project);
+        _context = context;
+    }
+
+    // 3. Note the "async" and "Task<Project>". This is the Async promise.
+    public async Task<Project> AddProjectAsync(string name)
+    {
+        var project = new Project { Name = name };
+        
+        // Add to the database tracking (not saved yet)
+        _context.Projects.Add(project);
+        
+        // SAVE CHANGES. This generates the SQL INSERT and runs it.
+        // "await" means "pause here until the database is done".
+        await _context.SaveChangesAsync();
+        
         return project;
     }
 
-    public Project? GetProjectById(int id)
+    public async Task<Project?> GetProjectByIdAsync(int id)
     {
-        return _projects.FirstOrDefault(p => p.Id == id);
+        // We use Entity Framework to query the DB
+        // Include(p => p.Tasks) means "Also load the tasks associated with this project"
+        return await _context.Projects
+                             .Include(p => p.Tasks)
+                             .FirstOrDefaultAsync(p => p.Id == id);
     }
 
-    public TaskItem? AddTaskToProject(int projectId, string taskDescription)
+    public async Task<TaskItem?> AddTaskToProjectAsync(int projectId, string description)
     {
-        var project = GetProjectById(projectId);
-        if (project == null)
-        {
-            return null; // Project not found
-        }
+        var project = await GetProjectByIdAsync(projectId);
+        if (project == null) return null;
 
-        var task = new TaskItem { Id = _nextTaskId++, Description = taskDescription, IsCompleted = false };
+        var task = new TaskItem { Description = description, IsCompleted = false };
+        
         project.Tasks.Add(task);
+        
+        // EF Core is smart. It sees we added a task to a project, 
+        // so it knows to INSERT the task into the Tasks table.
+        await _context.SaveChangesAsync();
+
         return task;
     }
-    
-    public bool MarkTaskAsComplete(int projectId, int taskId)
+
+    public async Task<bool> MarkTaskAsCompleteAsync(int projectId, int taskId)
     {
-        var project = GetProjectById(projectId);
-        if(project == null)
-        {
-            return false;
-        }
-        var task = project.Tasks.FirstOrDefault(t => t.Id == taskId);
-        
-        if(task == null)
-        {
-            return false;
-        }
+        // We can query the Tasks table directly!
+        var task = await _context.Tasks.FirstOrDefaultAsync(t => t.Id == taskId);
+
+        if (task == null) return false;
+
         task.IsCompleted = true;
+        
+        // This generates an SQL UPDATE command
+        await _context.SaveChangesAsync();
 
         return true;
     }

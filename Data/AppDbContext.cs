@@ -1,0 +1,14 @@
+using Microsoft.EntityFrameworkCore;
+using ProjectManagerApi; // <--- THIS LINE FIXES THE ERROR
+
+namespace ProjectManagerApi.Data;
+
+public class AppDbContext : DbContext
+{
+    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) 
+    { 
+    }
+
+    public DbSet<Project> Projects { get; set; }
+    public DbSet<TaskItem> Tasks { get; set; }
+}
