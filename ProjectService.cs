@@ -61,11 +61,22 @@ public class ProjectService
 
         if (task == null) return false;
 
-        task.IsCompleted = true;
-        
+        task.IsCompleted = true;   
         // This generates an SQL UPDATE command
         await _context.SaveChangesAsync();
+        return true;
+    }
 
+    public async Task<bool> DeleteProjectAsync(int id)
+    {
+        var project = await _context.Projects.Include(p => p.Tasks).FirstOrDefaultAsync(p => p.Id == id);
+
+        if (project == null)
+        {
+            return false;
+        }
+        _context.Projects.Remove(project);
+        await _context.SaveChangesAsync();
         return true;
     }
 }

@@ -51,7 +51,7 @@ public class ProjectsController : ControllerBase
     }
 
     // 4. PUT: api/projects/{projectId}/tasks/{taskId}
-    // This exposes your "Mark as Complete" logic to the web!
+    // This exposes "Mark as Complete" logic to the web!
     [HttpPut("{projectId}/tasks/{taskId}")]
     public async Task<IActionResult> MarkTaskComplete(int projectId, int taskId)
     {
@@ -64,4 +64,16 @@ public class ProjectsController : ControllerBase
 
         return NotFound();
     }
+    [HttpDelete("{id}")]
+    public async Task <IActionResult> DeleteProjectAsync(int id)
+    {
+        var project = await _projectService.DeleteProjectAsync(id);
+        if (project)
+        {
+            return NoContent();
+        }
+
+        return NotFound();
+    }
+
 }
