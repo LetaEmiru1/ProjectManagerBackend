@@ -75,5 +75,17 @@ public class ProjectsController : ControllerBase
 
         return NotFound();
     }
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateProjectAsync(int id, [FromBody] string newName) //[FromBody] tells it not to look for string in the url
+    {
+        var project = await _projectService.UpdateProjectAsync(id, newName);
+        if (project != null)
+        {
+            return Ok(project);
+        }
+
+        return NotFound();
+
+    }
 
 }

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore; // Needed for ToListAsync, FirstOrDefaultAsync
 using ProjectManagerApi.Data;
 
@@ -78,5 +79,17 @@ public class ProjectService
         _context.Projects.Remove(project);
         await _context.SaveChangesAsync();
         return true;
+    }
+    public async Task<Project?> UpdateProjectAsync(int id, string newName)
+    {
+        var project = await _context.Projects.Include(p=>p.Tasks).FirstOrDefaultAsync(p => p.Id ==id);
+        if (project == null)
+        {
+            return null;
+        }
+        project.Name = newName;
+        await _context.SaveChangesAsync();
+
+        return project;
     }
 }
